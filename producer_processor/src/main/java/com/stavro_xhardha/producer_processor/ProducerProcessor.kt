@@ -4,7 +4,10 @@ import com.google.auto.service.AutoService
 import com.google.common.collect.Iterables.getOnlyElement
 import com.squareup.kotlinpoet.*
 import com.stavro_xhardha.producer.Producer
-import me.eugeniomarletti.kotlin.metadata.*
+import me.eugeniomarletti.kotlin.metadata.KotlinClassMetadata
+import me.eugeniomarletti.kotlin.metadata.extractFullName
+import me.eugeniomarletti.kotlin.metadata.isPrimary
+import me.eugeniomarletti.kotlin.metadata.kotlinMetadata
 import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf
 import me.eugeniomarletti.kotlin.metadata.shadow.metadata.deserialization.NameResolver
 import me.eugeniomarletti.kotlin.processing.KotlinAbstractProcessor
@@ -21,6 +24,7 @@ import javax.tools.Diagnostic
 class ProducerProcessor : KotlinAbstractProcessor() {
 
     private val viewModelProducerAnnotation = Producer::class.java
+
 
     override fun process(annotations: Set<TypeElement>, roundEnv: RoundEnvironment): Boolean {
         roundEnv.getElementsAnnotatedWith(viewModelProducerAnnotation)
@@ -84,16 +88,16 @@ class ProducerProcessor : KotlinAbstractProcessor() {
                 }
             }
 
-//            val overridingMethod =
-//                FunSpec.builder("doSth")
-//                    .addCode(
-//                        "$annotatedCLassName${generateViewModelConstructor(
-//                            mainConstructor?.valueParameterList,
-//                            nameResolver
-//                        )} as T"
-//                    )
+            val typeElement =
+                elementUtils.getTypeElement("androidx.lifecycle.ViewModelProvider.Factory")
 
-           // val overridingMethod = FunSpec.builder("set")
+            val overridingMethod =
+                FunSpec.overriding(getOnlyElement(methodsIn(typeElement.enclosedElements))).addCode(
+                    "return $annotatedCLassName${generateViewModelConstructor(
+                        mainConstructor?.valueParameterList,
+                        nameResolver
+                    )} as T"
+                )
 
             val generatingClass = TypeSpec.classBuilder("${annotatedCLassName}Factory")
                 .primaryConstructor(primaryConstructor.build()).apply {
